@@ -3,10 +3,28 @@ use std::{fs::File, io::BufWriter, path::Path};
 use ray_tracing_in_one_weekend::ray::*;
 use ray_tracing_in_one_weekend::vec::*;
 
+fn ray_color(r: &Ray) -> Color {
+    if hit_sphere(Point3::new(0., 0., 1.), 0.5, r) {
+        return Color::new(1., 0., 0.)
+    }
+    let unit_direction = r.direction().normalized();
+    let t = 0.5 * (unit_direction.y() + 1.0);
+    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+}
+
+fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> bool {
+    let oc = r.origin() - center;
+    let a = r.direction().dot(&r.direction());
+    let b = 2. * r.direction().dot(&oc);
+    let c = oc.dot(&oc) - radius.powi(2);
+    let discriminant = b.powi(2) - 4. * a * c;
+    discriminant < 0.
+}
+
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 256;
-    let image_height = 256;
+    let image_width = 284;
+    let image_height = (image_width as f64 / aspect_ratio) as u32;
 
     println!("P3");
     println!("{} {}", image_width, image_height);
@@ -27,13 +45,6 @@ fn main() {
     for j in (0..image_height).rev() {
         eprintln!("Scanlines remaining: {}", j);
         for i in 0..image_width {
-            // let r = (i as f64) / (image_width as f64 - 1.0);
-            // let g = (j as f64) / (image_height as f64 - 1.0);
-            // let b = 0.25f64;
-
-            // let ir = (255.999 * r).floor() as i64;
-            // let ig = (255.999 * g).floor() as i64;
-            // let ib = (255.999 * b).floor() as i64;
             let u = (i as f64) / (image_width as f64 - 1.0);
             let v = (j as f64) / (image_height as f64 - 1.0);
             let r = Ray::new(
@@ -42,23 +53,14 @@ fn main() {
             );
 
             let pixel_color = ray_color(&r);
-            // pixel_color.write
-
-            // let pixel_color = Color::new(
-            //     (i as f64) / (image_width as f64 - 1.0),
-            //     (j as f64) / (image_height as f64 - 1.0),
-            //     0.25f64,
-            // );
-            // println!("{} {} {}", ir, ig, ib);
-            // eprintln!("{}", pixel_color.print());
-            if j % 100 == 0 {
-                eprintln!("{:?}", pixel_color.print_png());
-            }
+            // if j % 100 == 0 {
+            //     eprintln!("{:?}", pixel_color.print_png());
+            // }
             data.append(&mut pixel_color.print_png());
         }
     }
     let path = Path::new(
-        r"C:\Users\honda.takumi21\GitHub\ray_tracing_in_one_weak_end\ray_tracing_in_one_weekend\image.png",
+        r"image.png",
     );
     let file = File::create(path).unwrap();
     let ref mut w = BufWriter::new(file);
@@ -68,10 +70,4 @@ fn main() {
     let mut writer = encoder.write_header().unwrap();
     let _ = writer.write_image_data(&data);
     eprintln!("Done")
-}
-
-fn ray_color(r: &Ray) -> Color {
-    let unit_direction = r.direction().normalized();
-    let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
 }
