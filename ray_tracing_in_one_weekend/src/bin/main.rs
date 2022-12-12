@@ -1,13 +1,15 @@
 use std::{fs::File, io::BufWriter, path::Path};
 
-use ray_tracing_in_one_weekend::ray::*;
-use ray_tracing_in_one_weekend::vec::*;
+use ray_tracing_in_one_weekend::{hit::*, ray::*, sphere::*, vec::*};
 
-fn ray_color(r: &Ray) -> Color {
-    let t = hit_sphere(Point3::new(0., 0., -1.), 0.5, r);
-    if t > 0. {
-        let n = (r.at(t) - Vec3::new(0., 0., -1.)).normalized();
-        0.5 * Color::new(n.x() + 1., n.y() + 1., n.z() + 1.)
+fn ray_color(r: &Ray, world: &Sphere) -> Color {
+    // let t = hit_sphere(Point3::new(0., 0., -1.), 0.5, r);
+    // if t > 0. {
+    //     let n = (r.at(t) - Vec3::new(0., 0., -1.)).normalized();
+    //     0.5 * Color::new(n.x() + 1., n.y() + 1., n.z() + 1.)
+    // } else {
+    if let Some(rec) = world.hit(r, 0., f64::INFINITY) {
+        0.5 * (rec.normal + Color::new(1., 1., 1.))
     } else {
         let unit_direction = r.direction().normalized();
         let t = 0.5 * (unit_direction.y() + 1.0);
@@ -35,8 +37,12 @@ fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> f64 {
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 284;
+    let image_width = 256;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
+
+    let mut world = vec![];
+    world.push(Sphere::new(Point3::new(0., 0., -1.), 0.5));
+    world.push(Sphere::new(Point3::new(0., -100.5, -1.), 100.));
 
     println!("P3");
     println!("{} {}", image_width, image_height);
@@ -63,12 +69,16 @@ fn main() {
                 origin,
                 lower_left_corner + u * horizontal + v * vertical - origin,
             );
-
-            let pixel_color = ray_color(&r);
+            for w in &world {
+                let pixel_color = ray_color(&r, w);
+                data.append(&mut pixel_color.print_png());
+                if j % 1000 == 0 {
+                    eprintln!("{:?}", pixel_color.print_png());
+                }
+            }
             // if j % 100 == 0 {
             //     eprintln!("{:?}", pixel_color.print_png());
             // }
-            data.append(&mut pixel_color.print_png());
         }
     }
     let path = Path::new(r"image.png");
