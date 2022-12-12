@@ -4,21 +4,33 @@ use ray_tracing_in_one_weekend::ray::*;
 use ray_tracing_in_one_weekend::vec::*;
 
 fn ray_color(r: &Ray) -> Color {
-    if hit_sphere(Point3::new(0., 0., 1.), 0.5, r) {
-        return Color::new(1., 0., 0.)
+    let t = hit_sphere(Point3::new(0., 0., -1.), 0.5, r);
+    if t > 0. {
+        let n = (r.at(t) - Vec3::new(0., 0., -1.)).normalized();
+        0.5 * Color::new(n.x() + 1., n.y() + 1., n.z() + 1.)
+    } else {
+        let unit_direction = r.direction().normalized();
+        let t = 0.5 * (unit_direction.y() + 1.0);
+        (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
     }
-    let unit_direction = r.direction().normalized();
-    let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
 }
 
-fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> bool {
+fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> f64 {
     let oc = r.origin() - center;
-    let a = r.direction().dot(&r.direction());
-    let b = 2. * r.direction().dot(&oc);
-    let c = oc.dot(&oc) - radius.powi(2);
-    let discriminant = b.powi(2) - 4. * a * c;
-    discriminant < 0.
+    // let a = r.direction().dot(r.direction());
+    let a = r.direction().length().powi(2);
+    let b = 2. * r.direction().dot(oc);
+    let harf_b = oc.dot(r.direction());
+    // let c = oc.dot(oc) - radius.powf(2.);
+    let c = oc.length().powi(2) - radius * radius;
+    // let discriminant = b.powf(2.) - 4. * a * c;
+    let discriminant = harf_b * harf_b - a * c;
+    if discriminant < 0. {
+        -1.
+    } else {
+        // (-b - discriminant.sqrt()) / (2. * a)
+        (-harf_b - discriminant.sqrt()) / a
+    }
 }
 
 fn main() {
@@ -59,9 +71,7 @@ fn main() {
             data.append(&mut pixel_color.print_png());
         }
     }
-    let path = Path::new(
-        r"image.png",
-    );
+    let path = Path::new(r"image.png");
     let file = File::create(path).unwrap();
     let ref mut w = BufWriter::new(file);
     let mut encoder = png::Encoder::new(w, image_width, image_height);
