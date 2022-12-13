@@ -1,6 +1,10 @@
 use std::fmt;
 use std::fmt::Display;
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Range, Sub, SubAssign,
+};
+
+use rand::Rng;
 
 #[derive(Clone, Copy)]
 pub struct Vec3 {
@@ -59,8 +63,48 @@ impl Vec3 {
         vec![x, y, z, 255]
     }
 
+    pub fn print_sample_png(&self, samples_per_pixel: u64) -> Vec<u8> {
+        let x = (256. * (self[0] / (samples_per_pixel as f64)).clamp(0., 0.999)) as u8;
+        let y = (256. * (self[1] / (samples_per_pixel as f64)).clamp(0., 0.999)) as u8;
+        let z = (256. * (self[2] / (samples_per_pixel as f64)).clamp(0., 0.999)) as u8;
+        vec![x, y, z, 255]
+
+        // let x = (256.
+        //     * (self[0] / (samples_per_pixel as f64))
+        //         .sqrt()
+        //         .clamp(0., 0.999)) as u8;
+        // let y = (256.
+        //     * (self[1] / (samples_per_pixel as f64))
+        //         .sqrt()
+        //         .clamp(0., 0.999)) as u8;
+        // let z = (256.
+        //     * (self[2] / (samples_per_pixel as f64))
+        //         .sqrt()
+        //         .clamp(0., 0.999)) as u8;
+    }
+
     pub fn normalized(self) -> Vec3 {
         self / self.length()
+    }
+
+    pub fn random(r: Range<f64>) -> Vec3 {
+        let mut rng = rand::thread_rng();
+        Vec3 {
+            e: [
+                rng.gen_range(r.clone()),
+                rng.gen_range(r.clone()),
+                rng.gen_range(r.clone()),
+            ],
+        }
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3 {
+        loop {
+            let v = Vec3::random(-1.0..1.);
+            if v.length() < 1. {
+                return v;
+            }
+        }
     }
 }
 
