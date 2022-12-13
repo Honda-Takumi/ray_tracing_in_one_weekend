@@ -2,7 +2,7 @@ use std::{fs::File, io::BufWriter, path::Path};
 
 use ray_tracing_in_one_weekend::{hit::*, ray::*, sphere::*, vec::*};
 
-fn ray_color(r: &Ray, world: &Sphere) -> Color {
+fn ray_color(r: &Ray, world: &World) -> Color {
     // let t = hit_sphere(Point3::new(0., 0., -1.), 0.5, r);
     // if t > 0. {
     //     let n = (r.at(t) - Vec3::new(0., 0., -1.)).normalized();
@@ -40,9 +40,9 @@ fn main() {
     let image_width = 256;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
 
-    let mut world = vec![];
-    world.push(Sphere::new(Point3::new(0., 0., -1.), 0.5));
-    world.push(Sphere::new(Point3::new(0., -100.5, -1.), 100.));
+    let mut world = World::new();
+    world.push(Box::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
+    world.push(Box::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
 
     println!("P3");
     println!("{} {}", image_width, image_height);
@@ -69,13 +69,9 @@ fn main() {
                 origin,
                 lower_left_corner + u * horizontal + v * vertical - origin,
             );
-            for w in &world {
-                let pixel_color = ray_color(&r, w);
-                data.append(&mut pixel_color.print_png());
-                if j % 1000 == 0 {
-                    eprintln!("{:?}", pixel_color.print_png());
-                }
-            }
+            let pixel_color = ray_color(&r, &world);
+            data.append(&mut pixel_color.print_png());
+
             // if j % 100 == 0 {
             //     eprintln!("{:?}", pixel_color.print_png());
             // }
