@@ -1,5 +1,8 @@
+use std::rc::Rc;
+
 use super::hit::Hit;
 use super::hit::HitRecord;
+use super::material::Scatter;
 use super::ray::Ray;
 use super::vec::{Point3, Vec3};
 
@@ -7,13 +10,15 @@ use super::vec::{Point3, Vec3};
 pub struct Sphere {
     pub center: Point3,
     pub radius: f64,
+    mat: Rc<dyn Scatter>,
 }
 
 impl Sphere {
-    pub fn new(cen: Point3, r: f64) -> Sphere {
+    pub fn new(cen: Point3, r: f64, m: Rc<dyn Scatter>) -> Sphere {
         Sphere {
             center: cen,
             radius: r,
+            mat: m,
         }
     }
 }
@@ -25,41 +30,23 @@ impl Hit for Sphere {
         let half_b = oc.dot(r.direction());
         let c = oc.length_squared() - self.radius.powi(2);
         let discriminant = half_b.powi(2) - a * c;
-        // if discriminant > 0. {
-        //     let root = discriminant.sqrt();
-        //     let tmp = (-half_b - root) / a;
-
-        //     if tmp < t_max && tmp > t_min {
-        //         rec.t = tmp;
-        //         rec.p = r.at(rec.t);
-        //         // rec.normal = (rec.p - self.center) / self.radius;
-        //         let outward_normal = (rec.p - self.center) / self.radius;
-        //         rec.set_face_normal(r, outward_normal);
-        //         return true;
-        //     }
-        //     let tmp = (-half_b + root) / a;
-        //     if tmp < t_max && tmp > t_min {
-        //         rec.t = tmp;
-        //         rec.p = r.at(rec.t);
-        //         // rec.normal = (rec.p - self.center) / self.radius;
-        //         let outward_normal = (rec.p - self.center) / self.radius;
-        //         rec.set_face_normal(r, outward_normal);
-        //         return true;
-        //     }
-        // }
-        // false
         if discriminant < 0. {
             return None;
         }
         let sqrtd = discriminant.sqrt();
         let mut root = (-half_b - sqrtd) / a;
         if root < t_min || t_max < root {
-            return None;
+            root = (-half_b + sqrtd) / a;
+            if root < t_min || t_max < root {
+                return None;
+            }
         }
+
         let p = r.at(root);
         let mut rec = HitRecord {
             t: root,
             p: p,
+            mat: self.mat.clone(),
             normal: Vec3::new(0., 0., 0.),
             front_face: false,
         };

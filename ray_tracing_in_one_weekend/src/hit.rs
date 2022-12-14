@@ -1,5 +1,7 @@
+use super::material::Scatter;
 use super::ray::Ray;
 use super::vec::{Point3, Vec3};
+use std::rc::Rc;
 
 pub type World = Vec<Box<dyn Hit>>;
 
@@ -7,6 +9,7 @@ pub type World = Vec<Box<dyn Hit>>;
 pub struct HitRecord {
     pub p: Point3,
     pub normal: Vec3,
+    pub mat: Rc<dyn Scatter>,
     pub t: f64,
     pub front_face: bool,
 }
